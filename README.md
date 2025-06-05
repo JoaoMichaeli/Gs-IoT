@@ -18,6 +18,18 @@ Oferecer uma ferramenta acessível e escalável para **prevenção de desastres 
 - **MQTT** (via broker público HiveMQ) – Protocolo de comunicação
 - Dashboard Node-RED – Visualização dos dados em tempo real
 
+### 🛡️ Prevenção Ativa
+- Monitoramento contínuo de 3 fatores críticos:
+  - Nível d'água
+  - Intensidade pluviométrica
+  - Acúmulo de resíduos
+
+### 📊 Dashboard Inteligente
+- Visualização integrada no Node-RED com:
+  - Gráficos temporais
+  - Indicador de risco colorido
+  - Histórico dos últimos 30 minutos
+
 ## 🔁 Funcionamento do Sistema
 
 1. O ESP32 coleta dados dos sensores (valores analógicos simulados).
@@ -95,30 +107,152 @@ graph LR
 }
 ```
 
+## 🧩 Componentes
+
+### 🔌 Hardware
+| Componente       | Descrição                          | Pino ESP32 |
+|------------------|------------------------------------|------------|
+| Sensor de Água   | Mede nível de água (0-4095)        | GPIO34     |
+| Sensor de Chuva  | Detecta precipitação pluviométrica | GPIO33     |
+| Sensor de Resíduo| Identifica acúmulo de detritos     | GPIO32     |
+| LED de Alerta    | Indicador visual de risco          | GPIO25     |
+
 ## 📄 Código-Fonte Comentado (Trecho do ESP32)
 
 ```cpp
-  // Lê valores dos sensores
-  int valorAgua = analogRead(34);
-  int valorChuva = analogRead(35);
-  int valorResiduo = analogRead(32);
+// Bibliotecas necessárias
+#include <WiFi.h>          // Para conexão WiFi
+#include <PubSubClient.h>  // Para comunicação MQTT
+#include <ArduinoJson.h>   // Para manipulação de JSON
 
-  // Calcula risco com base em thresholds simples
-  bool alerta = (valorAgua > 2000 || valorChuva > 2000);
+// Configurações de rede
+const char* ssid = "Wokwi-GUEST";    // SSID da rede WiFi
+const char* password = "";           // Senha da rede (vazia para rede aberta)
+const char* mqttServer = "broker.hivemq.com";  // Broker MQTT público
+const int mqttPort = 1883;                     // Porta padrão MQTT
+
+WiFiClient espClient;                // Cliente WiFi para ESP32
+PubSubClient client(espClient);      // Cliente MQTT
+
+// Definição dos pinos
+const int pinResiduo = 32;  // Pino do sensor de resíduos
+const int pinChuva = 33;    // Pino do sensor de chuva
+const int pinAgua = 34;     // Pino do sensor de nível de água
+const int pinAlerta = 25;   // Pino do LED de alerta
+
+// Limiares dos sensores (valores analógicos 0-4095)
+const int limiteResiduo = 2000;  // Limite para detecção de resíduos
+const int limiteChuva = 2000;    // Limite para detecção de chuva intensa
+const int limiteAgua = 2000;     // Limite para detecção de nível alto de água
+
+/*
+ * Função: setup_wifi
+ * ------------------
+ * Estabelece conexão com a rede WiFi e exibe status no monitor serial
+ */
+void setup_wifi() {
+  Serial.begin(115200);  // Inicia comunicação serial
+  Serial.print("Conectando ao WiFi...");
+  WiFi.begin(ssid, password);  // Inicia conexão WiFi
   
+  // Aguarda até que a conexão seja estabelecida
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi conectado!");  // Confirmação de conexão
+}
+
+/*
+ * Função: reconnect
+ * -----------------
+ * Gerenciamento de reconexão com o broker MQTT
+ */
+void reconnect() {
+  // Tenta reconectar até obter sucesso
+  while (!client.connected()) {
+    Serial.print("Conectando MQTT...");
+    
+    // Tenta conexão com ID único
+    if (client.connect("ESP32Client_Alagamento")) {
+      Serial.println("Conectado!");
+    } else {
+      // Exibe motivo da falha e tenta novamente após 5 segundos
+      Serial.print("Falha, rc=");
+      Serial.print(client.state());
+      Serial.println(" Tentando novamente em 5s...");
+      delay(5000);
+    }
+  }
+}
+
+/*
+ * Função: setup
+ * -------------
+ * Configuração inicial do sistema
+ */
+void setup() {
+  pinMode(pinAlerta, OUTPUT);  // Configura pino do LED como saída
+  setup_wifi();                // Conecta ao WiFi
+  client.setServer(mqttServer, mqttPort);  // Configura servidor MQTT
+}
+
+/*
+ * Função: loop
+ * ------------
+ * Loop principal do programa, executado continuamente
+ */
+void loop() {
+  // Verifica e mantém conexão MQTT
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();  // Mantém a conexão MQTT ativa
+
+  // Leitura dos sensores analógicos
+  int leituraResiduo = analogRead(pinResiduo);
+  int leituraChuva = analogRead(pinChuva);
+  int leituraAgua = analogRead(pinAgua);
+
+  // Determina se há situação de risco
+  bool alerta = (leituraResiduo > limiteResiduo || 
+                leituraChuva > limiteChuva || 
+                leituraAgua > limiteAgua);
+  
+  // Define o nível de risco e aciona o alerta visual
   const char* risco;
   if (alerta) {
     risco = "ALTO";
+    digitalWrite(pinAlerta, HIGH);  // Aciona LED
   } else {
     risco = "BAIXO";
+    digitalWrite(pinAlerta, LOW);   // Desliga LED
   }
 
-  // Cria documento JSON dinâmico e envia via MQTT
+  // Cria documento JSON com os dados dos sensores
   DynamicJsonDocument doc(256);
-  doc["residuo"] = valorResiduo;
-  doc["chuva"] = valorChuva;
-  doc["agua"] = valorAgua;
+  doc["residuo"] = leituraResiduo;
+  doc["chuva"] = leituraChuva;
+  doc["agua"] = leituraAgua;
   doc["risco"] = risco;
+
+  // Serializa JSON para envio
+  char payload[256];
+  size_t n = serializeJson(doc, payload);
+  
+  // Exibe no monitor serial para debug
+  Serial.print("JSON enviado: ");
+  Serial.println(payload);
+
+  // Publica no tópico MQTT
+  if (client.publish("alagamento/sensores", payload)) {
+    Serial.println("Publicado com sucesso!");
+  } else {
+    Serial.println("Falha ao publicar!");
+  }
+
+  delay(10000);  // Intervalo entre leituras (10 segundos)
+}
 ```
 
 ## 🌎 Impacto Ambiental e Social
