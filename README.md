@@ -57,25 +57,12 @@ Você verá os gráficos de sensores em tempo real e o alerta de risco de alagam
 
 ### Dashboard em funcionamento:
 
-![Dashboard Node-RED]("dashboard.png")
+![Dashboard Node-RED]("\images\dashboard.png")
+
 
 ### Estrutura dos sensores no Wokwi:
 
 ![Simulação no Wokwi](docs/wokwi.png)
-
-## 🧩 Estrutura do Projeto
-
-```
-.
-├── arduino/
-│   └── main.ino             # Código do ESP32 para leitura dos sensores e envio via MQTT
-├── node-red/
-│   └── fluxo-node-red.json  # Exportação do fluxo usado no dashboard
-├── docs/
-│   ├── dashboard.png        # Captura de tela do dashboard
-│   └── wokwi.png            # Imagem da simulação no Wokwi
-└── README.md
-```
 
 ## 💬 Fluxo de Dados no Node-RED
 
@@ -119,21 +106,3 @@ String mensagem = "{"residuo":" + String(valorResiduo) +
                   ","risco":"" + risco + ""}";
 client.publish("alagamento/sensores", mensagem.c_str());
 ```
-
-## ✅ Requisitos Atendidos
-
-| Requisito                                                        | Atendido |
-|------------------------------------------------------------------|:--------:|
-| Protótipo funcional e operacional                                |   ✔️     |
-| Comunicação entre dispositivos e gateway via MQTT                |   ✔️     |
-| Integração com dashboard (Node-RED)                              |   ✔️     |
-| Testado em ambiente simulado (Wokwi)                             |   ✔️     |
-| Código comentado e bem organizado                                |   ✔️     |
-| README com explicações e instruções completas                    |   ✔️     |
-| Imagens e evidências de funcionamento                            |   ✔️     |
-
-## 👨‍💻 Autor
-
-João Victor Michaeli de Bem  
-Estudante de Análise e Desenvolvimento de Sistemas – FIAP  
-GitHub: [seu_link_aqui]
