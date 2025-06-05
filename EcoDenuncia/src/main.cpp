@@ -1,40 +1,72 @@
-#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 
-// Pinos dos sensores (potenciômetros)
-const int pinResiduo = 32;     // Sensor de resíduo
-const int pinChuva = 33;       // Sensor de chuva
-const int pinNivelAgua = 34;   // Sensor de nível de água
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+const char* mqttServer = "broker.hivemq.com";
+const int mqttPort = 1883;
 
-// LED de alerta
-const int pinLED = 25;
+WiFiClient espClient;
+PubSubClient client(espClient);
 
-// Limiares (valores podem ser ajustados conforme testes)
-const int limiteResiduo = 2000;   // valor do potenciômetro indicando presença de resíduo
-const int limiteChuva = 2000;     // intensidade da chuva
-const int limiteAgua = 2500;      // nível da água considerado crítico
+// Pinos dos sensores
+const int pinResiduo = 32;
+const int pinChuva = 33;
+const int pinAgua = 34;
+const int pinAlerta = 25;
+
+// Limites
+const int limiteResiduo = 2000;
+const int limiteChuva = 2000;
+const int limiteAgua = 2000;
+
+void setup_wifi() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    if (client.connect("ESP32Client_Alagamento")) {
+      // conectado
+    } else {
+      delay(5000);
+    }
+  }
+}
 
 void setup() {
   Serial.begin(115200);
-  pinMode(pinLED, OUTPUT);
+  pinMode(pinAlerta, OUTPUT);
+
+  setup_wifi();
+  client.setServer(mqttServer, mqttPort);
 }
 
 void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+
   int leituraResiduo = analogRead(pinResiduo);
   int leituraChuva = analogRead(pinChuva);
-  int leituraAgua = analogRead(pinNivelAgua);
+  int leituraAgua = analogRead(pinAgua);
 
-  Serial.println("----------");
-  Serial.printf("Resíduo: %d\n", leituraResiduo);
-  Serial.printf("Chuva: %d\n", leituraChuva);
-  Serial.printf("Nível de Água: %d\n", leituraAgua);
+  bool alerta = (leituraResiduo > limiteResiduo && leituraChuva > limiteChuva && leituraAgua > limiteAgua);
+  digitalWrite(pinAlerta, alerta ? HIGH : LOW);
 
-  // Regra de risco: se houver resíduo + chuva forte + água subindo
-  if (leituraResiduo > limiteResiduo && leituraChuva > limiteChuva && leituraAgua > limiteAgua) {
-    digitalWrite(pinLED, HIGH); // alerta
-    Serial.println("Risco de alagamento detectado!");
-  } else {
-    digitalWrite(pinLED, LOW);
-  }
+  // JSON manual
+  String payload = "{";
+  payload += "\"residuo\":" + String(leituraResiduo) + ",";
+  payload += "\"chuva\":" + String(leituraChuva) + ",";
+  payload += "\"agua\":" + String(leituraAgua) + ",";
+  payload += "\"risco\":" + String(alerta ? "true" : "false");
+  payload += "}";
 
-  delay(1000);
+  client.publish("alagamento/sensores", payload.c_str());
+
+  delay(2000);
 }
