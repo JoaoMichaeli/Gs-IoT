@@ -57,12 +57,15 @@ Você verá os gráficos de sensores em tempo real e o alerta de risco de alagam
 
 ### Dashboard em funcionamento:
 
-![Dashboard Node-RED]("./images/dashboard.png")
-
+![Dashboard Node-RED](images/dashboard.png)
 
 ### Estrutura dos sensores no Wokwi:
 
-![Simulação no Wokwi](docs/wokwi.png)
+![Simulação no Wokwi](images/wokwi.png)
+
+### Fluxo Node-RED:
+
+![Fluxo Node-RED](images/fluxo.png)
 
 ## 💬 Fluxo de Dados no Node-RED
 
@@ -91,20 +94,27 @@ graph LR
 ## 📄 Código-Fonte Comentado (Trecho do ESP32)
 
 ```cpp
-// Simula valores analógicos
-int valorAgua = analogRead(34);
-int valorChuva = analogRead(35);
-int valorResiduo = analogRead(32);
+  // Lê valores dos sensores
+  int valorAgua = analogRead(34);
+  int valorChuva = analogRead(35);
+  int valorResiduo = analogRead(32);
 
-// Calcula risco com base em thresholds simples
-String risco = (valorAgua > 2000 && valorChuva > 2000) ? "ALTO" : "BAIXO";
+  // Calcula risco com base em thresholds simples
+  bool alerta = (valorAgua > 2000 || valorChuva > 2000);
+  
+  const char* risco;
+  if (alerta) {
+    risco = "ALTO";
+  } else {
+    risco = "BAIXO";
+  }
 
-// Monta JSON e envia via MQTT
-String mensagem = "{"residuo":" + String(valorResiduo) +
-                  ","chuva":" + String(valorChuva) +
-                  ","agua":" + String(valorAgua) +
-                  ","risco":"" + risco + ""}";
-client.publish("alagamento/sensores", mensagem.c_str());
+  // Cria documento JSON dinâmico e envia via MQTT
+  DynamicJsonDocument doc(256);
+  doc["residuo"] = valorResiduo;
+  doc["chuva"] = valorChuva;
+  doc["agua"] = valorAgua;
+  doc["risco"] = risco;
 ```
 --
 
