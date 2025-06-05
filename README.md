@@ -68,7 +68,7 @@ Você verá os gráficos de sensores em tempo real e o alerta de risco de alagam
 
 ```mermaid
 graph LR
-    MQTT[MQTT Broker (HiveMQ)] --> NodeRED[Node-RED]
+    MQTT --> NodeRED[Node-RED]
     NodeRED --> ParseJSON[Parse JSON]
     ParseJSON --> Agua[Gráfico: Água]
     ParseJSON --> Chuva[Gráfico: Chuva]
