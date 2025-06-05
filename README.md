@@ -31,7 +31,7 @@ Oferecer uma ferramenta acessível e escalável para **prevenção de desastres 
 ### 1. Executar Simulação no Wokwi
 
 - Acesse o projeto no Wokwi:  
-  👉 [Link para simulação Wokwi](#coloque-o-link-aqui)
+  👉 [Link para simulação Wokwi](https://wokwi.com/projects/432943969413076993)
 - Pressione **Play** para simular os dados sendo enviados via MQTT.
 
 ### 2. Configurar o Node-RED
@@ -57,7 +57,7 @@ Você verá os gráficos de sensores em tempo real e o alerta de risco de alagam
 
 ### Dashboard em funcionamento:
 
-![Dashboard Node-RED]("\images\dashboard.png")
+![Dashboard Node-RED]("./images/dashboard.png")
 
 
 ### Estrutura dos sensores no Wokwi:
@@ -106,3 +106,10 @@ String mensagem = "{"residuo":" + String(valorResiduo) +
                   ","risco":"" + risco + ""}";
 client.publish("alagamento/sensores", mensagem.c_str());
 ```
+--
+
+## 🌎 Impacto Ambiental e Social
+- ♻️ Contribuição para uma cidade mais limpa e sustentável.  
+- 🌧️ Redução de enchentes causadas por descarte irregular.  
+- 🏙️ Melhoria na qualidade de vida urbana.  
+- 🤝 Facilita a comunicação entre cidadãos e órgãos públicos.
