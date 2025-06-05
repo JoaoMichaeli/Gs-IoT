@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
 
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
@@ -9,38 +10,42 @@ const int mqttPort = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// Pinos dos sensores
 const int pinResiduo = 32;
 const int pinChuva = 33;
 const int pinAgua = 34;
 const int pinAlerta = 25;
 
-// Limites
 const int limiteResiduo = 2000;
 const int limiteChuva = 2000;
 const int limiteAgua = 2000;
 
 void setup_wifi() {
+  Serial.begin(115200);
+  Serial.print("Conectando ao WiFi...");
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
   }
+  Serial.println("\nWiFi conectado!");
 }
 
 void reconnect() {
   while (!client.connected()) {
+    Serial.print("Conectando MQTT...");
     if (client.connect("ESP32Client_Alagamento")) {
-      // conectado
+      Serial.println("Conectado!");
     } else {
+      Serial.print("Falha, rc=");
+      Serial.print(client.state());
+      Serial.println(" Tentando novamente em 5s...");
       delay(5000);
     }
   }
 }
 
 void setup() {
-  Serial.begin(115200);
   pinMode(pinAlerta, OUTPUT);
-
   setup_wifi();
   client.setServer(mqttServer, mqttPort);
 }
@@ -55,18 +60,36 @@ void loop() {
   int leituraChuva = analogRead(pinChuva);
   int leituraAgua = analogRead(pinAgua);
 
-  bool alerta = (leituraResiduo > limiteResiduo && leituraChuva > limiteChuva && leituraAgua > limiteAgua);
-  digitalWrite(pinAlerta, alerta ? HIGH : LOW);
+  bool alerta = (leituraResiduo > limiteResiduo || 
+                leituraChuva > limiteChuva || 
+                leituraAgua > limiteAgua);
+  
+  const char* risco;
+  if (alerta) {
+    risco = "ALTO";
+    digitalWrite(pinAlerta, HIGH);
+  } else {
+    risco = "BAIXO";
+    digitalWrite(pinAlerta, LOW);
+  }
 
-  // JSON manual
-  String payload = "{";
-  payload += "\"residuo\":" + String(leituraResiduo) + ",";
-  payload += "\"chuva\":" + String(leituraChuva) + ",";
-  payload += "\"agua\":" + String(leituraAgua) + ",";
-  payload += "\"risco\":" + String(alerta ? "true" : "false");
-  payload += "}";
+  DynamicJsonDocument doc(256);
+  doc["residuo"] = leituraResiduo;
+  doc["chuva"] = leituraChuva;
+  doc["agua"] = leituraAgua;
+  doc["risco"] = risco;
 
-  client.publish("alagamento/sensores", payload.c_str());
+  char payload[256];
+  size_t n = serializeJson(doc, payload);
+  
+  Serial.print("JSON enviado: ");
+  Serial.println(payload);
 
-  delay(2000);
+  if (client.publish("alagamento/sensores", payload)) {
+    Serial.println("Publicado com sucesso!");
+  } else {
+    Serial.println("Falha ao publicar!");
+  }
+
+  delay(10000);
 }
