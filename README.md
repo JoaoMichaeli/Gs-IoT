@@ -120,7 +120,6 @@ graph LR
   doc["agua"] = valorAgua;
   doc["risco"] = risco;
 ```
---
 
 ## 🌎 Impacto Ambiental e Social
 - ♻️ Contribuição para uma cidade mais limpa e sustentável.  
