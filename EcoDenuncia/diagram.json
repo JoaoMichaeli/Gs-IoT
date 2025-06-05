@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "author": "ChatGPT",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 100, "left": 100, "attrs": {} },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot1",
+      "top": 171.5,
+      "left": -38.6,
+      "attrs": { "label": "Resíduo Presente" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot2",
+      "top": 171.5,
+      "left": 259,
+      "attrs": { "label": "Sensor de Chuva" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot3",
+      "top": -10.9,
+      "left": 115,
+      "attrs": { "label": "Nível da Água" }
+    },
+    { "type": "wokwi-led", "id": "led1", "top": 250, "left": 100, "attrs": { "color": "red" } }
+  ],
+  "connections": [
+    [ "pot1:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "pot1:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "pot1:SIG", "esp:GPIO32", "green", [ "v0" ] ],
+    [ "pot2:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "pot2:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "pot2:SIG", "esp:GPIO33", "green", [ "v0" ] ],
+    [ "pot3:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "pot3:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "pot3:SIG", "esp:GPIO34", "green", [ "v0" ] ],
+    [ "led1:CATHODE", "esp:GND.2", "black", [ "v0" ] ],
+    [ "led1:ANODE", "esp:GPIO25", "red", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
