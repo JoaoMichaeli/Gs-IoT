@@ -71,13 +71,17 @@ Você verá os gráficos de sensores em tempo real e o alerta de risco de alagam
 
 ```mermaid
 graph LR
-    MQTT --> NodeRED[Node-RED]
+    MQTT((MQTT\nallagamento/sensores)) --> NodeRED[Node-RED]
     NodeRED --> ParseJSON[Parse JSON]
-    ParseJSON --> Agua[Gráfico: Água]
-    ParseJSON --> Chuva[Gráfico: Chuva]
-    ParseJSON --> Residuo[Gráfico: Resíduo]
-    ParseJSON --> FunctionAlerta[Função: Extrair Risco]
-    FunctionAlerta --> Alerta[Texto: Alerta de Alagamento]
+    ParseJSON --> FunctionAgua[Função: Água]
+    ParseJSON --> FunctionChuva[Função: Chuva]
+    ParseJSON --> FunctionResiduo[Função: Resíduo]
+    ParseJSON --> FunctionAlerta[Função: Alerta]
+    
+    FunctionAgua --> DashboardAgua[Dashboard:\nNível da Água]
+    FunctionChuva --> DashboardChuva[Dashboard:\nSensor de Chuva]
+    FunctionResiduo --> DashboardResiduo[Dashboard:\nResíduo]
+    FunctionAlerta --> DashboardAlerta[Dashboard:\nAlerta de Alagamento]
 ```
 
 ## 🧪 Exemplo de Payload recebido via MQTT
